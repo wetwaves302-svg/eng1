@@ -1,0 +1,280 @@
+import React, { useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Trophy, Sword, ShieldAlert, Flame, Skull, RotateCcw, BookOpen, Zap, Target, Gamepad2, Sparkles, CheckCircle2, XCircle, Eye, EyeOff } from "lucide-react";
+
+const WORDS = [
+  { w: "feeling", pos: "n.", zh: "感情；感覺", ex: "Don’t lie to your friends. You will hurt their feelings.", cloze: "Don’t lie to your friends. You will hurt their _____.", hint: "朋友之間不能說謊，因為會傷害他們的感情。" },
+  { w: "nervous", pos: "adj.", zh: "緊張的", ex: "Daniel was nervous about riding a scooter for the first time.", cloze: "Daniel was _____ about riding a scooter for the first time.", hint: "Daniel 第一次騎機車，所以很緊張。" },
+  { w: "conversation", pos: "n.", zh: "對話；交談", ex: "Sally likes to have a conversation with local people.", cloze: "Sally likes to have a _____ with local people.", hint: "Sally 喜歡和當地人交談。" },
+  { w: "thus", pos: "adv.", zh: "所以；因此", ex: "That department store is having a sale. Thus, it is full of people.", cloze: "That department store is having a sale. _____, it is full of people.", hint: "百貨公司在特價，所以擠滿了人。" },
+  { w: "message", pos: "n.", zh: "訊息", ex: "Wonder Woman left a message for Superman.", cloze: "Wonder Woman left a _____ for Superman.", hint: "神力女超人留了一則訊息給超人。" },
+  { w: "hint", pos: "n./v.", zh: "暗示；提示", ex: "The ending of the movie hinted that the bad guy would be back.", cloze: "The ending of the movie _____ that the bad guy would be back.", hint: "電影結尾暗示壞人會回來。" },
+  { w: "offer", pos: "v./n.", zh: "提供；提出", ex: "The guest house offered a free breakfast to its guests.", cloze: "The guest house _____ a free breakfast to its guests.", hint: "民宿提供免費早餐。" },
+  { w: "refuse", pos: "v.", zh: "拒絕", ex: "Linda refused to go to the beach with us.", cloze: "Linda _____ to go to the beach with us.", hint: "Linda 拒絕跟我們去海邊。" },
+  { w: "reply", pos: "v./n.", zh: "回答；回覆", ex: "Don’t reply to the call. The number looks strange.", cloze: "Don’t _____ to the call. The number looks strange.", hint: "不要回覆那通電話，號碼看起來很奇怪。" },
+  { w: "attitude", pos: "n.", zh: "態度", ex: "My mom’s attitude toward online games changed.", cloze: "My mom’s _____ toward online games changed.", hint: "媽媽對線上遊戲的態度改變了。" },
+  { w: "confuse", pos: "v.", zh: "使困惑", ex: "The directions there confused her.", cloze: "The directions there _____ her.", hint: "那裡的方向指示讓她困惑。" },
+  { w: "accept", pos: "v.", zh: "接受", ex: "He only accepts their cards.", cloze: "He only _____ their cards.", hint: "他只接受粉絲的卡片。" },
+  { w: "acceptable", pos: "adj.", zh: "可接受的", ex: "It is acceptable now.", cloze: "It is _____ now.", hint: "現在這件事是可接受的。" },
+  { w: "invitation", pos: "n.", zh: "邀請", ex: "Mary could not accept her friend’s invitation to dinner.", cloze: "Mary could not accept her friend’s _____ to dinner.", hint: "Mary 無法接受朋友的晚餐邀請。" },
+  { w: "mention", pos: "v./n.", zh: "提到；提及", ex: "Josh mentioned his plan to me.", cloze: "Josh _____ his plan to me.", hint: "Josh 向我提到他的計畫。" },
+  { w: "positive", pos: "adj.", zh: "正面的；肯定的；樂觀的", ex: "The restaurant received a positive response.", cloze: "The restaurant received a _____ response.", hint: "餐廳收到正面的回應。" },
+  { w: "result", pos: "n./v.", zh: "結果；產生", ex: "His success was the result of hard work.", cloze: "His success was the _____ of hard work.", hint: "他的成功是努力的結果。" },
+  { w: "beg", pos: "v.", zh: "乞討；懇求", ex: "Some poor children are begging coins from tourists.", cloze: "Some poor children are _____ coins from tourists.", hint: "一些孩子正在向遊客乞討硬幣。" },
+  { w: "pity", pos: "n.", zh: "同情；可惜", ex: "May took pity on the lost guy.", cloze: "May took _____ on the lost guy.", hint: "May 同情那個迷路的人。" },
+  { w: "continue", pos: "v.", zh: "繼續", ex: "Leo decided to continue learning the guitar.", cloze: "Leo decided to _____ learning the guitar.", hint: "Leo 決定繼續學吉他。" },
+  { w: "travel", pos: "n./v.", zh: "旅行；旅遊", ex: "Jenny doesn’t like air travel.", cloze: "Jenny doesn’t like air _____.", hint: "Jenny 不喜歡搭飛機旅行。" },
+  { w: "realize", pos: "v.", zh: "意識到；實現", ex: "I realized that they were on a date.", cloze: "I _____ that they were on a date.", hint: "我意識到他們在約會。" },
+  { w: "valuable", pos: "adj.", zh: "有價值的；寶貴的", ex: "Stephen Curry was one of the most valuable players.", cloze: "Stephen Curry was one of the most _____ players.", hint: "Curry 是最有價值的球員之一。" },
+  { w: "similar", pos: "adj.", zh: "相似的", ex: "I took the wrong jacket because it looked similar to mine.", cloze: "I took the wrong jacket because it looked _____ to mine.", hint: "我拿錯外套，因為它看起來和我的很像。" },
+  { w: "occur", pos: "v.", zh: "發生", ex: "A surprise just occurred at the restaurant.", cloze: "A surprise just _____ at the restaurant.", hint: "餐廳發生了一件驚喜。" },
+  { w: "cause", pos: "v./n.", zh: "造成；導致；起因", ex: "What caused his computer to run so slowly?", cloze: "What _____ his computer to run so slowly?", hint: "什麼導致他的電腦跑這麼慢？" },
+  { w: "donate", pos: "v.", zh: "捐贈", ex: "She donated a lot of money to her high school.", cloze: "She _____ a lot of money to her high school.", hint: "她捐很多錢給高中母校。" },
+  { w: "receive", pos: "v.", zh: "收到", ex: "Zoe’s funny photo received many likes.", cloze: "Zoe’s funny photo _____ many likes.", hint: "Zoe 的有趣照片收到很多讚。" },
+  { w: "ordinary", pos: "adj.", zh: "普通的；平常的", ex: "This is not an ordinary watch.", cloze: "This is not an _____ watch.", hint: "這不是一只普通手錶。" },
+  { w: "character", pos: "n.", zh: "人物；角色；個性", ex: "Doraemon is a cute robot character.", cloze: "Doraemon is a cute robot _____.", hint: "哆啦A夢是一個可愛的機器人角色。" },
+  { w: "promote", pos: "v.", zh: "宣傳；推銷", ex: "The sellers are promoting their fresh vegetables.", cloze: "The sellers are _____ their fresh vegetables.", hint: "攤販正在推銷新鮮蔬菜。" },
+  { w: "region", pos: "n.", zh: "地區；區域", ex: "Snow was falling in the mountain region.", cloze: "Snow was falling in the mountain _____.", hint: "山區正在下雪。" },
+  { w: "event", pos: "n.", zh: "活動；事件", ex: "Robert takes part in many social events.", cloze: "Robert takes part in many social _____.", hint: "Robert 參加很多社交活動。" },
+  { w: "worldwide", pos: "adv.", zh: "在世界各地", ex: "COVID-19 spread worldwide.", cloze: "COVID-19 spread _____.", hint: "COVID-19 在世界各地傳播。" },
+  { w: "therefore", pos: "adv.", zh: "因此；所以", ex: "Stanley is tall and strong. Therefore, he wears pants in a large size.", cloze: "Stanley is tall and strong. _____, he wears pants in a large size.", hint: "Stanley 高大強壯，因此穿大尺寸的褲子。" },
+  { w: "behave", pos: "v.", zh: "表現；行為", ex: "The old man still behaves like a child.", cloze: "The old man still _____ like a child.", hint: "老人仍然表現得像小孩。" },
+  { w: "attract", pos: "v.", zh: "吸引", ex: "The big sale attracted Lucy to the mall.", cloze: "The big sale _____ Lucy to the mall.", hint: "大特價吸引 Lucy 去購物中心。" },
+  { w: "tourist", pos: "n.", zh: "遊客", ex: "The foreign tourists enjoyed the snacks.", cloze: "The foreign _____ enjoyed the snacks.", hint: "外國遊客享用小吃。" },
+  { w: "hometown", pos: "n.", zh: "家鄉", ex: "Beigang is my hometown.", cloze: "Beigang is my _____.", hint: "北港是我的家鄉。" },
+  { w: "create", pos: "v.", zh: "創造", ex: "People created the word unfollow.", cloze: "People _____ the word unfollow.", hint: "人們創造了 unfollow 這個字。" },
+  { w: "government", pos: "n.", zh: "政府", ex: "The government is promoting public bikes.", cloze: "The _____ is promoting public bikes.", hint: "政府正在推廣公共自行車。" },
+  { w: "increase", pos: "v./n.", zh: "增加；增進", ex: "The noise increases when the garbage truck comes near.", cloze: "The noise _____ when the garbage truck comes near.", hint: "垃圾車靠近時，噪音會增加。" },
+  { w: "human", pos: "n.", zh: "人類", ex: "There are no humans but only animals on that island.", cloze: "There are no _____ but only animals on that island.", hint: "那座島上沒有人類，只有動物。" },
+  { w: "relationship", pos: "n.", zh: "關係", ex: "My cat has a very good relationship with my rabbit.", cloze: "My cat has a very good _____ with my rabbit.", hint: "我的貓和兔子關係很好。" },
+  { w: "illegal", pos: "adj.", zh: "違法的；非法的", ex: "It is illegal to smoke in public places.", cloze: "It is _____ to smoke in public places.", hint: "在公共場所抽菸是違法的。" },
+  { w: "drug", pos: "n.", zh: "毒品；藥物", ex: "The man became excited after he took drugs.", cloze: "The man became excited after he took _____.", hint: "那個人吸毒後變得興奮。" },
+  { w: "serve", pos: "v.", zh: "擔任；服務；供應", ex: "Leila served chocolate cake to her friends.", cloze: "Leila _____ chocolate cake to her friends.", hint: "Leila 供應巧克力蛋糕給朋友。" },
+  { w: "artist", pos: "n.", zh: "藝術家", ex: "That artist is drawing a picture of the tourist.", cloze: "That _____ is drawing a picture of the tourist.", hint: "那位藝術家正在畫遊客。" },
+  { w: "achieve", pos: "v.", zh: "獲得；達到", ex: "Tim finally achieved his dream.", cloze: "Tim finally _____ his dream.", hint: "Tim 終於達成他的夢想。" },
+  { w: "view", pos: "v./n.", zh: "看待；視為；看法", ex: "I view Ruby as my best friend.", cloze: "I _____ Ruby as my best friend.", hint: "我把 Ruby 視為最好的朋友。" },
+  { w: "familiar", pos: "adj.", zh: "熟悉的", ex: "That girl looks familiar.", cloze: "That girl looks _____.", hint: "那個女孩看起來很熟悉。" },
+  { w: "social", pos: "adj.", zh: "社交的；社會的", ex: "The guitar club will have a social event today.", cloze: "The guitar club will have a _____ event today.", hint: "吉他社今天有社交活動。" },
+  { w: "article", pos: "n.", zh: "文章", ex: "There is an article about I. M. Pei.", cloze: "There is an _____ about I. M. Pei.", hint: "報紙上有一篇關於貝聿銘的文章。" },
+  { w: "post", pos: "v./n.", zh: "張貼；網路貼文", ex: "Rachel’s posts on Facebook are about her cat.", cloze: "Rachel’s _____ on Facebook are about her cat.", hint: "Rachel 的 Facebook 貼文通常關於她的貓。" },
+  { w: "instant", pos: "adj.", zh: "立即的", ex: "I need some coffee to give me instant energy.", cloze: "I need some coffee to give me _____ energy.", hint: "我需要咖啡給我立即的能量。" },
+  { w: "attention", pos: "n.", zh: "注意", ex: "The baby is crying to catch his mom’s attention.", cloze: "The baby is crying to catch his mom’s _____.", hint: "寶寶哭是為了吸引媽媽注意。" },
+  { w: "spread", pos: "v./n.", zh: "散布；傳播", ex: "The news spread quickly in the school.", cloze: "The news _____ quickly in the school.", hint: "這個消息在學校快速傳開。" },
+  { w: "advantage", pos: "n.", zh: "好處；優點", ex: "Free calls are one of the advantages of LINE.", cloze: "Free calls are one of the _____ of LINE.", hint: "免費通話是 LINE 的優點之一。" },
+  { w: "technology", pos: "n.", zh: "科技", ex: "Thanks to modern technology, I can buy things easily.", cloze: "Thanks to modern _____, I can buy things easily.", hint: "多虧現代科技，我能輕鬆購物。" },
+  { w: "trend", pos: "n.", zh: "潮流；趨勢", ex: "There is a growing trend toward bringing one’s own bags.", cloze: "There is a growing _____ toward bringing one’s own bags.", hint: "自備購物袋成為越來越明顯的趨勢。" },
+  { w: "discuss", pos: "v.", zh: "討論", ex: "Dustin and I are discussing our trip.", cloze: "Dustin and I are _____ our trip.", hint: "Dustin 和我正在討論旅行。" },
+  { w: "whole", pos: "adj./n.", zh: "全部的；整體", ex: "Jane ate the whole box of Suncakes.", cloze: "Jane ate the _____ box of Suncakes.", hint: "Jane 吃完整盒太陽餅。" },
+];
+
+const PHRASES = [
+  { w: "get along with", zh: "和某人相處融洽", ex: "My brother gets along with his classmates.", cloze: "My brother _____ his classmates.", hint: "哥哥和同學相處融洽。" },
+  { w: "carry on", zh: "進行；繼續下去", ex: "The TV station cannot carry on the program.", cloze: "The TV station cannot _____ the program.", hint: "電視台無法繼續節目。" },
+  { w: "to one’s surprise", zh: "令人驚訝的是", ex: "To everyone’s surprise, the popcorn costs NT$1,000.", cloze: "_____, the popcorn costs NT$1,000.", hint: "令大家驚訝的是，爆米花要一千元。" },
+  { w: "turn down", zh: "拒絕", ex: "I can’t believe you just turned down the free trip!", cloze: "I can’t believe you just _____ the free trip!", hint: "你竟然拒絕免費旅行。" },
+  { w: "come across", zh: "碰見；偶然發現", ex: "Alice came across some silly pictures.", cloze: "Alice _____ some silly pictures.", hint: "Alice 偶然發現一些搞笑照片。" },
+  { w: "give away", zh: "分送；贈送", ex: "The band gave away 100 signed CDs.", cloze: "The band _____ 100 signed CDs.", hint: "樂團送出 100 張簽名 CD。" },
+  { w: "in addition", zh: "此外", ex: "In addition, it offers free Wi-Fi.", cloze: "_____, it offers free Wi-Fi.", hint: "此外，它還提供免費 Wi-Fi。" },
+  { w: "as a result", zh: "結果；因此", ex: "As a result, he couldn’t see the bus numbers.", cloze: "_____, he couldn’t see the bus numbers.", hint: "結果，他看不清公車號碼。" },
+  { w: "make a difference", zh: "有影響", ex: "A pet can make a big difference to a lonely person.", cloze: "A pet can _____ to a lonely person.", hint: "寵物能對孤單的人產生很大影響。" },
+  { w: "and so on", zh: "等等", ex: "You can share your photos on Facebook, Instagram, and so on.", cloze: "You can share your photos on Facebook, Instagram, _____.", hint: "你可以分享到 Facebook、Instagram 等等。" },
+  { w: "pick out", zh: "挑選", ex: "Nora picked out a ham sandwich.", cloze: "Nora _____ a ham sandwich.", hint: "Nora 挑了一個火腿三明治。" },
+  { w: "tell A from B", zh: "分辨 A 和 B", ex: "Ray is trying to tell the duck from the chicken.", cloze: "Ray is trying to _____ the duck _____ the chicken.", hint: "Ray 正試著分辨鴨子和雞。" },
+  { w: "for example", zh: "例如", ex: "For example, Peng Cheng-min is one of my favorite players.", cloze: "_____, Peng Cheng-min is one of my favorite players.", hint: "例如，彭政閔是我喜歡的球員之一。" },
+  { w: "turn out", zh: "結果是；最後", ex: "It turned out that she was out.", cloze: "It _____ that she was out.", hint: "結果她不在家。" },
+];
+
+const ALL = [...WORDS, ...PHRASES].map((x, i) => ({ id: i + 1, ...x, type: PHRASES.includes(x) ? "phrase" : "word" }));
+
+const pick = (arr, n) => [...arr].sort(() => Math.random() - 0.5).slice(0, n);
+const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
+
+function makeQuestion(mode, pool = ALL) {
+  const answer = pick(pool, 1)[0];
+  let prompt = "";
+  let choices = [];
+  let answerText = "";
+  let kind = mode;
+
+  if (mode === "mix") kind = Math.random() > 0.5 ? "zh2en" : "en2zh";
+
+  if (kind === "zh2en") {
+    prompt = answer.zh;
+    answerText = answer.w;
+    choices = shuffle([answer.w, ...pick(pool.filter(x => x.id !== answer.id), 3).map(x => x.w)]);
+  } else if (kind === "en2zh") {
+    prompt = answer.w;
+    answerText = answer.zh;
+    choices = shuffle([answer.zh, ...pick(pool.filter(x => x.id !== answer.id), 3).map(x => x.zh)]);
+  } else {
+    prompt = answer.cloze;
+    answerText = answer.w;
+    choices = shuffle([answer.w, ...pick(pool.filter(x => x.id !== answer.id), 3).map(x => x.w)]);
+  }
+
+  return { ...answer, prompt, choices, answerText, kind };
+}
+
+function StatPill({ icon, label, value }) {
+  return <div className="rounded-2xl bg-white/10 border border-white/10 px-3 py-2 flex items-center gap-2 shadow-inner">
+    {icon}<span className="text-xs text-slate-300">{label}</span><b className="text-white">{value}</b>
+  </div>;
+}
+
+function MiniGlossary({ sentence, answer, zh }) {
+  const [on, setOn] = useState(false);
+  const tokens = sentence.split(/(\s+)/);
+  return <div className="mt-3 rounded-2xl bg-slate-950/60 border border-cyan-300/20 p-3">
+    <button onClick={() => setOn(!on)} className="mb-2 flex items-center gap-2 text-xs text-cyan-200">
+      {on ? <EyeOff size={14}/> : <Eye size={14}/>} {on ? "關閉單字救援" : "開啟單字救援：點句子看提示"}
+    </button>
+    <p className="leading-8 text-slate-100 text-sm">
+      {tokens.map((t, idx) => {
+        const clean = t.toLowerCase().replace(/[^a-z]/g, "");
+        const isKey = answer.toLowerCase().split(" ").some(a => clean.includes(a.replace(/[^a-z]/g, "")) && a.length > 2);
+        return <span key={idx} title={on && isKey ? zh : ""} className={on && isKey ? "px-1 rounded-lg bg-amber-300/20 text-amber-200 cursor-help border-b border-amber-300" : ""}>{t}</span>
+      })}
+    </p>
+    {on && <div className="mt-2 text-xs text-amber-100 bg-amber-400/10 rounded-xl px-3 py-2">關鍵提示：<b>{answer}</b>＝{zh}</div>}
+  </div>
+}
+
+export default function VocabBattleMobileGame() {
+  const [mode, setMode] = useState("mix");
+  const [q, setQ] = useState(() => makeQuestion("mix"));
+  const [selected, setSelected] = useState(null);
+  const [score, setScore] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [hp, setHp] = useState(5);
+  const [wrong, setWrong] = useState([]);
+  const [coins, setCoins] = useState(0);
+  const [toast, setToast] = useState(null);
+  const [bossHp, setBossHp] = useState(100);
+  const [filter, setFilter] = useState("all");
+
+  const pool = useMemo(() => filter === "all" ? ALL : ALL.filter(x => x.type === filter), [filter]);
+
+  const next = (newMode = mode) => {
+    setSelected(null);
+    setQ(makeQuestion(newMode, pool.length >= 4 ? pool : ALL));
+  };
+
+  const choose = (choice) => {
+    if (selected) return;
+    setSelected(choice);
+    const ok = choice === q.answerText;
+    if (ok) {
+      const gain = 10 + Math.min(combo * 2, 20);
+      const dmg = 12 + Math.min(combo * 3, 30);
+      setScore(s => s + gain);
+      setCoins(c => c + 3 + Math.min(combo, 5));
+      setCombo(c => c + 1);
+      setBossHp(h => Math.max(0, h - dmg));
+      setToast({ type: "ok", text: combo >= 4 ? "連擊爆發！Boss 被打爛了！" : "命中！能量 +1" });
+    } else {
+      setHp(h => Math.max(0, h - 1));
+      setCombo(0);
+      setWrong(prev => [{ id: Date.now(), w: q.w, zh: q.zh, your: choice, ans: q.answerText }, ...prev].slice(0, 12));
+      setToast({ type: "bad", text: "失誤！已加入錯題集合區" });
+    }
+    setTimeout(() => {
+      if (bossHp <= 15 && ok) setBossHp(100);
+      next();
+    }, 900);
+  };
+
+  const reset = () => {
+    setScore(0); setCombo(0); setHp(5); setWrong([]); setCoins(0); setBossHp(100); setToast(null); setSelected(null); setQ(makeQuestion(mode));
+  };
+
+  const modeLabel = { mix: "單字混戰", zh2en: "中文選英文", en2zh: "英文選中文", cloze: "克漏字突襲" }[mode];
+  const isCloze = q.kind === "cloze";
+
+  return <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#243b80,#111827_45%,#050814)] text-white flex justify-center p-3 font-sans">
+    <div className="w-full max-w-md rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl bg-slate-900/80 relative">
+      <div className="absolute inset-0 pointer-events-none opacity-30 bg-[radial-gradient(circle_at_20%_10%,#22d3ee,transparent_28%),radial-gradient(circle_at_80%_0%,#f97316,transparent_24%),radial-gradient(circle_at_60%_70%,#a855f7,transparent_24%)]" />
+      <div className="relative p-4 pb-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs text-cyan-200 flex items-center gap-1"><Gamepad2 size={14}/> Hualien Voc Battle</div>
+            <h1 className="text-2xl font-black tracking-tight">單字地下城</h1>
+          </div>
+          <div className="rounded-2xl bg-amber-300 text-slate-950 px-3 py-2 font-black shadow-lg rotate-2">Lv.1</div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-4 gap-2">
+          <StatPill icon={<Trophy size={15} className="text-amber-300"/>} label="分" value={score}/>
+          <StatPill icon={<Flame size={15} className="text-orange-300"/>} label="連" value={combo}/>
+          <StatPill icon={<Sparkles size={15} className="text-yellow-200"/>} label="幣" value={coins}/>
+          <StatPill icon={<ShieldAlert size={15} className="text-rose-300"/>} label="HP" value={hp}/>
+        </div>
+
+        <div className="mt-4 rounded-3xl bg-slate-950/70 border border-fuchsia-300/20 p-3 shadow-xl">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 text-sm font-bold text-fuchsia-200"><Skull size={16}/> 今日 Boss：拖延魔</div>
+            <span className="text-xs text-slate-400">答對扣血</span>
+          </div>
+          <div className="h-4 bg-slate-800 rounded-full overflow-hidden border border-white/10">
+            <motion.div animate={{ width: `${bossHp}%` }} className="h-full bg-gradient-to-r from-fuchsia-500 via-red-400 to-amber-300" />
+          </div>
+        </div>
+
+        <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+          {["mix", "zh2en", "en2zh", "cloze"].map(m => <button key={m} onClick={() => { setMode(m); setTimeout(() => next(m), 0); }} className={`shrink-0 px-3 py-2 rounded-2xl text-xs font-bold border ${mode === m ? "bg-cyan-300 text-slate-950 border-cyan-100" : "bg-white/10 border-white/10 text-slate-200"}`}>{ { mix:"混戰", zh2en:"中→英", en2zh:"英→中", cloze:"克漏字" }[m]}</button>)}
+        </div>
+        <div className="mt-2 flex gap-2">
+          {["all", "word", "phrase"].map(f => <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-xl text-xs ${filter===f ? "bg-emerald-300 text-slate-950 font-bold" : "bg-white/10 text-slate-300"}`}>{f === "all" ? "全部" : f === "word" ? "單字" : "片語"}</button>)}
+        </div>
+      </div>
+
+      <div className="relative p-4 pt-2">
+        <AnimatePresence mode="wait">
+          <motion.div key={q.id + q.kind + q.prompt} initial={{ opacity: 0, y: 18, scale: .97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -12, scale: .97 }} className="rounded-[2rem] bg-white text-slate-950 p-5 shadow-2xl">
+            <div className="flex items-center justify-between mb-3">
+              <span className="px-3 py-1 rounded-full bg-slate-950 text-cyan-200 text-xs font-bold flex items-center gap-1"><Target size={13}/> {modeLabel}</span>
+              <span className="text-xs text-slate-500">{q.type === "phrase" ? "PHRASE" : q.pos}</span>
+            </div>
+
+            <div className="text-sm text-slate-500 mb-1">選出正確答案</div>
+            <div className={`${isCloze ? "text-xl" : "text-3xl"} font-black leading-snug`}>{q.prompt}</div>
+
+            {isCloze && <MiniGlossary sentence={q.ex} answer={q.w} zh={q.zh} />}
+
+            <div className="mt-4 grid gap-3">
+              {q.choices.map((choice, idx) => {
+                const correct = choice === q.answerText;
+                const picked = selected === choice;
+                return <button key={choice} onClick={() => choose(choice)} className={`text-left rounded-2xl px-4 py-3 border-2 font-bold transition active:scale-[0.98] flex items-center justify-between gap-2 ${selected ? correct ? "bg-emerald-100 border-emerald-500 text-emerald-800" : picked ? "bg-rose-100 border-rose-500 text-rose-800" : "bg-slate-50 border-slate-200 text-slate-500" : "bg-slate-50 hover:bg-cyan-50 border-slate-200 text-slate-900"}`}>
+                  <span><span className="inline-flex w-6 h-6 mr-2 rounded-lg bg-slate-900 text-white text-xs items-center justify-center">{String.fromCharCode(65+idx)}</span>{choice}</span>
+                  {selected && correct && <CheckCircle2 size={20}/>} {selected && picked && !correct && <XCircle size={20}/>} 
+                </button>
+              })}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {toast && <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className={`mt-3 rounded-2xl px-4 py-3 text-sm font-bold flex items-center gap-2 ${toast.type === "ok" ? "bg-emerald-400 text-slate-950" : "bg-rose-500 text-white"}`}>{toast.type === "ok" ? <Sword size={18}/> : <ShieldAlert size={18}/>} {toast.text}</motion.div>}
+        </AnimatePresence>
+
+        <div className="mt-4 rounded-[1.5rem] bg-white/10 border border-white/10 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-black flex items-center gap-2"><BookOpen size={18}/> 錯題集合區</h2>
+            <button onClick={reset} className="text-xs flex items-center gap-1 text-slate-300"><RotateCcw size={14}/> 重置</button>
+          </div>
+          {wrong.length === 0 ? <p className="text-sm text-slate-400">目前無錯題。維持連擊，打爆 Boss。</p> : <div className="grid gap-2 max-h-52 overflow-auto pr-1">
+            {wrong.map(item => <div key={item.id} className="rounded-2xl bg-slate-950/60 border border-rose-300/20 p-3">
+              <div className="font-black text-rose-200">{item.w}</div>
+              <div className="text-xs text-slate-300">{item.zh}</div>
+              <div className="mt-1 text-xs text-slate-400">正解：<span className="text-emerald-200">{item.ans}</span></div>
+            </div>)}
+          </div>}
+        </div>
+
+        <div className="mt-4 rounded-[1.5rem] bg-gradient-to-r from-cyan-400/20 to-fuchsia-400/20 border border-white/10 p-4 text-sm text-slate-200">
+          <b className="text-white">上課玩法：</b>3 分鐘限時挑戰。連擊越高，扣 Boss 血越多；錯題會立刻收進集合區，最後請學生只重打自己的錯題，形成個人化複習。
+        </div>
+      </div>
+    </div>
+  </div>;
+}
